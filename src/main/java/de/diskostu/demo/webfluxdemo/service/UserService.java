@@ -27,7 +27,29 @@ public class UserService {
     }
 
 
-    public void addUser(final User user) {
-        userRepository.save(user).subscribe();
+    public Mono<User> addUser(final User user) {
+        return userRepository.save(user);
+    }
+
+
+    public Mono<User> updateUser(final User userWithNewData) {
+        return userRepository
+                .findById(userWithNewData.getId())
+                .switchIfEmpty(Mono.error(new Exception("user with id %d not found".formatted(userWithNewData.getId()))))
+                .map(existingUser -> {
+                    existingUser.setName(userWithNewData.getName());
+                    existingUser.setSurname(userWithNewData.getSurname());
+                    existingUser.setUsername(userWithNewData.getUsername());
+                    existingUser.setEmail(userWithNewData.getEmail());
+                    existingUser.setPassport(userWithNewData.getPassport());
+                    return existingUser;
+                })
+                .flatMap(userRepository::save);
+    }
+
+
+    public Mono<Void> deleteUser(final long id) {
+        return userRepository.deleteById(id)
+                             .switchIfEmpty(Mono.error(new Exception("user with id %d not found".formatted(id))));
     }
 }
